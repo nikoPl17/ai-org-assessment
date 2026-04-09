@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Readiness Assessment</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 2rem 1.25rem 3rem;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: #e8e8e8;
+    border-radius: 2px;
+    margin-bottom: 2rem;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #534AB7;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .step-label { font-size: 12px; color: #888; margin-bottom: 0.4rem; }
+  .dim-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: #EEEDFE;
+    color: #3C3489;
+    margin-bottom: 0.75rem;
+  }
+  h2 { font-size: 20px; font-weight: 600; color: #1a1a1a; margin-bottom: 0.25rem; }
+  .screen-sub { font-size: 14px; color: #666; margin-bottom: 1.75rem; }
+
+  .q-block { margin-bottom: 1.5rem; }
+  .q-label { font-size: 14px; font-weight: 500; color: #1a1a1a; margin-bottom: 0.6rem; }
+
+  .option-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt-btn {
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .opt-btn:hover { background: #f5f5f5; border-color: #bbb; }
+  .opt-btn.selected, .opt-btn.selected-multi {
+    background: #EEEDFE;
+    border-color: #534AB7;
+    color: #3C3489;
+  }
+
+  .scale-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .scale-row { display: flex; gap: 8px; }
+  .scale-btn {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #1a1a1a;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scale-btn:hover { background: #f5f5f5; }
+  .scale-btn.selected { background: #EEEDFE; border-color: #534AB7; color: #3C3489; }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: #888; padding: 0 2px; }
+
+  select {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #1a1a1a;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+
+  input[type="text"], input[type="email"] {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #1a1a1a;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus, input[type="email"]:focus { border-color: #534AB7; }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #f0f0f0;
+  }
+  .btn-back {
+    font-size: 14px;
+    color: #888;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  .btn-back:hover { color: #1a1a1a; }
+  .btn-next {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: #534AB7;
+    border-color: #534AB7;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #3C3489; border-color: #3C3489; }
+
+  /* Results */
+  .result-score-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    margin: 1.25rem 0;
+  }
+  .score-card {
+    background: #f7f7f7;
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .score-card .s-label { font-size: 10px; color: #888; margin-bottom: 4px; }
+  .score-card .s-val { font-size: 20px; font-weight: 600; color: #534AB7; }
+
+  .insight-block {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+  .insight-block .i-dim { font-size: 11px; color: #534AB7; font-weight: 600; margin-bottom: 4px; }
+  .insight-block .i-text { font-size: 13px; color: #555; line-height: 1.55; }
+
+  .cta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1.5rem; }
+  .cta-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+    display: block;
+  }
+  .cta-card:hover { background: #f7f7f7; }
+  .cta-card .c-title { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+  .cta-card .c-sub { font-size: 12px; color: #888; }
+  .cta-primary { border-color: #534AB7; background: #EEEDFE; }
+  .cta-primary:hover { background: #dddcfc; }
+  .cta-primary .c-title { color: #3C3489; }
+
+  .overall-badge {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 20px;
+    background: #EEEDFE;
+    color: #3C3489;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .result-score-row { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .cta-row { grid-template-columns: 1fr; }
+    .scale-btn { width: 40px; height: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+
+<!-- Screen 0: Company profile -->
+<div class="screen active" id="s0">
+  <div class="step-label">Introduction · Company profile</div>
+  <h2>A few details about your company</h2>
+  <p class="screen-sub">This helps us tailor your results to companies like yours.</p>
+
+  <div class="q-block">
+    <div class="q-label">Your name</div>
+    <input type="text" id="userName" placeholder="e.g. Anna Müller" />
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Work email</div>
+    <input type="email" id="userEmail" placeholder="you@company.com" />
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">How many employees does your company have?</div>
+    <div class="option-grid" data-key="size" data-type="single">
+      <button class="opt-btn" data-val="1">Under 10</button>
+      <button class="opt-btn" data-val="2">10–50</button>
+      <button class="opt-btn" data-val="3">50–200</button>
+      <button class="opt-btn" data-val="4">200+</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Which industry are you in?</div>
+    <select id="industry">
+      <option value="">Select industry...</option>
+      <option>Healthcare</option><option>Technology</option><option>Finance</option>
+      <option>Legal</option><option>Marketing &amp; Communications</option>
+      <option>Manufacturing</option><option>Education</option><option>Other</option>
+    </select>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">How many teams does your organisation have?</div>
+    <div class="option-grid" data-key="teams" data-type="single">
+      <button class="opt-btn" data-val="1">1–3</button>
+      <button class="opt-btn" data-val="2">4–8</button>
+      <button class="opt-btn" data-val="3">9+</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">What is the average size of your teams?</div>
+    <div class="option-grid" data-key="teamsize" data-type="single">
+      <button class="opt-btn" data-val="1">1–5 people</button>
+      <button class="opt-btn" data-val="2">6–15 people</button>
+      <button class="opt-btn" data-val="3">16+ people</button>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <span></span>
+    <button class="btn-next btn-primary" onclick="goTo(1)">Start assessment →</button>
+  </div>
+</div>
+
+<!-- Screen 1: Dimension 1 -->
+<div class="screen" id="s1">
+  <div class="step-label">Dimension 1 of 5</div>
+  <span class="dim-tag">Current AI tool usage</span>
+  <h2>Which AI tools are used in your organisation?</h2>
+  <p class="screen-sub">Select all that apply.</p>
+
+  <div class="q-block">
+    <div class="q-label">AI tools currently in use</div>
+    <div class="option-grid" data-key="d1q1" data-type="multi">
+      <button class="opt-btn" data-val="claude">Claude</button>
+      <button class="opt-btn" data-val="chatgpt">ChatGPT</button>
+      <button class="opt-btn" data-val="copilot">Microsoft Copilot</button>
+      <button class="opt-btn" data-val="gemini">Gemini</button>
+      <button class="opt-btn" data-val="perplexity">Perplexity</button>
+      <button class="opt-btn" data-val="other">Other</button>
+      <button class="opt-btn" data-val="none">None yet</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">How frequently does your team use AI tools day-to-day?</div>
+    <div class="scale-wrap">
+      <div class="scale-row" data-key="d1q2" data-type="scale">
+        <button class="scale-btn" data-val="1">1</button>
+        <button class="scale-btn" data-val="2">2</button>
+        <button class="scale-btn" data-val="3">3</button>
+        <button class="scale-btn" data-val="4">4</button>
+        <button class="scale-btn" data-val="5">5</button>
+      </div>
+      <div class="scale-labels"><span>Never</span><span>Every day</span></div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Are employees exploring AI tools beyond the company's official stack?</div>
+    <div class="option-grid" data-key="d1q3" data-type="single">
+      <button class="opt-btn" data-val="1">Yes, definitely</button>
+      <button class="opt-btn" data-val="3">Probably some</button>
+      <button class="opt-btn" data-val="5">Not that I know of</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">For which tasks is AI most used today?</div>
+    <div class="option-grid" data-key="d1q4" data-type="multi">
+      <button class="opt-btn" data-val="writing">Writing &amp; communication</button>
+      <button class="opt-btn" data-val="research">Research</button>
+      <button class="opt-btn" data-val="analysis">Data analysis</button>
+      <button class="opt-btn" data-val="coding">Coding</button>
+      <button class="opt-btn" data-val="summaries">Meeting summaries</button>
+      <button class="opt-btn" data-val="other">Other</button>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goTo(0)">← Back</button>
+    <button class="btn-next btn-primary" onclick="goTo(2)">Next →</button>
+  </div>
+</div>
+
+<!-- Screen 2: Dimension 2 -->
+<div class="screen" id="s2">
+  <div class="step-label">Dimension 2 of 5</div>
+  <span class="dim-tag">AI competence &amp; mindset</span>
+  <h2>How ready are your people?</h2>
+  <p class="screen-sub">This dimension shapes the workshop depth we'd recommend.</p>
+
+  <div class="q-block">
+    <div class="q-label">How well does your team understand how large language models work?</div>
+    <div class="scale-wrap">
+      <div class="scale-row" data-key="d2q1" data-type="scale">
+        <button class="scale-btn" data-val="1">1</button><button class="scale-btn" data-val="2">2</button>
+        <button class="scale-btn" data-val="3">3</button><button class="scale-btn" data-val="4">4</button>
+        <button class="scale-btn" data-val="5">5</button>
+      </div>
+      <div class="scale-labels"><span>No understanding</span><span>Expert level</span></div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">How confident are your employees writing effective prompts?</div>
+    <div class="scale-wrap">
+      <div class="scale-row" data-key="d2q2" data-type="scale">
+        <button class="scale-btn" data-val="1">1</button><button class="scale-btn" data-val="2">2</button>
+        <button class="scale-btn" data-val="3">3</button><button class="scale-btn" data-val="4">4</button>
+        <button class="scale-btn" data-val="5">5</button>
+      </div>
+      <div class="scale-labels"><span>Not at all</span><span>Very confident</span></div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">How does your team generally perceive AI?</div>
+    <div class="option-grid" data-key="d2q3" data-type="single">
+      <button class="opt-btn" data-val="1">Threat to jobs</button>
+      <button class="opt-btn" data-val="3">Neutral tool</button>
+      <button class="opt-btn" data-val="5">Personal multiplier</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Has your organisation provided any formal AI training to date?</div>
+    <div class="option-grid" data-key="d2q4" data-type="single">
+      <button class="opt-btn" data-val="1">No</button>
+      <button class="opt-btn" data-val="3">Planned but not done</button>
+      <button class="opt-btn" data-val="5">Yes, structured training</button>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goTo(1)">← Back</button>
+    <button class="btn-next btn-primary" onclick="goTo(3)">Next →</button>
+  </div>
+</div>
+
+<!-- Screen 3: Dimension 3 -->
+<div class="screen" id="s3">
+  <div class="step-label">Dimension 3 of 5</div>
+  <span class="dim-tag">Workflow &amp; automation potential</span>
+  <h2>Where is time being lost?</h2>
+  <p class="screen-sub">This reveals where AI tools and automations will have the highest impact.</p>
+
+  <div class="q-block">
+    <div class="q-label">How many hours per week does an average employee spend on repetitive or manual tasks?</div>
+    <div class="option-grid" data-key="d3q1" data-type="single">
+      <button class="opt-btn" data-val="1">Less than 2h</button>
+      <button class="opt-btn" data-val="3">2–5h</button>
+      <button class="opt-btn" data-val="4">5–10h</button>
+      <button class="opt-btn" data-val="5">More than 10h</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Do processes in your team involve copy-pasting between systems or manual reformatting?</div>
+    <div class="option-grid" data-key="d3q2" data-type="single">
+      <button class="opt-btn" data-val="1">Rarely</button>
+      <button class="opt-btn" data-val="3">Sometimes</button>
+      <button class="opt-btn" data-val="5">Very frequently</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Which tools does your team use daily?</div>
+    <div class="option-grid" data-key="d3q3" data-type="multi">
+      <button class="opt-btn" data-val="outlook">Outlook / Gmail</button>
+      <button class="opt-btn" data-val="teams">Teams / Slack</button>
+      <button class="opt-btn" data-val="sharepoint">SharePoint / Drive</button>
+      <button class="opt-btn" data-val="notion">Notion</button>
+      <button class="opt-btn" data-val="crm">CRM (Salesforce etc.)</button>
+      <button class="opt-btn" data-val="excel">Excel / Sheets</button>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goTo(2)">← Back</button>
+    <button class="btn-next btn-primary" onclick="goTo(4)">Next →</button>
+  </div>
+</div>
+
+<!-- Screen 4: Dimension 4 -->
+<div class="screen" id="s4">
+  <div class="step-label">Dimension 4 of 5</div>
+  <span class="dim-tag">Leadership &amp; strategy alignment</span>
+  <h2>How aligned is leadership?</h2>
+  <p class="screen-sub">AI adoption stalls without leadership buy-in. This shapes our coaching recommendations.</p>
+
+  <div class="q-block">
+    <div class="q-label">Does your organisation have a defined AI strategy or vision?</div>
+    <div class="option-grid" data-key="d4q1" data-type="single">
+      <button class="opt-btn" data-val="1">No</button>
+      <button class="opt-btn" data-val="3">Informal / emerging</button>
+      <button class="opt-btn" data-val="5">Yes, clearly defined</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">How actively are leaders modelling AI usage for their teams?</div>
+    <div class="scale-wrap">
+      <div class="scale-row" data-key="d4q2" data-type="scale">
+        <button class="scale-btn" data-val="1">1</button><button class="scale-btn" data-val="2">2</button>
+        <button class="scale-btn" data-val="3">3</button><button class="scale-btn" data-val="4">4</button>
+        <button class="scale-btn" data-val="5">5</button>
+      </div>
+      <div class="scale-labels"><span>Not at all</span><span>Leading by example</span></div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">What is the biggest internal barrier to AI adoption in your view?</div>
+    <div class="option-grid" data-key="d4q3" data-type="single">
+      <button class="opt-btn" data-val="skills">Lack of skills</button>
+      <button class="opt-btn" data-val="change">Resistance to change</button>
+      <button class="opt-btn" data-val="strategy">No clear strategy</button>
+      <button class="opt-btn" data-val="privacy">Data / privacy concerns</button>
+      <button class="opt-btn" data-val="budget">No budget</button>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goTo(3)">← Back</button>
+    <button class="btn-next btn-primary" onclick="goTo(5)">Next →</button>
+  </div>
+</div>
+
+<!-- Screen 5: Dimension 5 -->
+<div class="screen" id="s5">
+  <div class="step-label">Dimension 5 of 5</div>
+  <span class="dim-tag">Data, compliance &amp; infrastructure</span>
+  <h2>How is your data protection set up?</h2>
+  <p class="screen-sub">Critical for recommending the right licensing model.</p>
+
+  <div class="q-block">
+    <div class="q-label">Is your organisation subject to specific data protection requirements?</div>
+    <div class="option-grid" data-key="d5q1" data-type="single">
+      <button class="opt-btn" data-val="1">Unsure</button>
+      <button class="opt-btn" data-val="3">Yes, GDPR</button>
+      <button class="opt-btn" data-val="3b">Yes, industry-specific</button>
+      <button class="opt-btn" data-val="5">Yes, both</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Are employees entering company-confidential data into free or public AI tools?</div>
+    <div class="option-grid" data-key="d5q2" data-type="single">
+      <button class="opt-btn" data-val="1">Yes, definitely</button>
+      <button class="opt-btn" data-val="3">Probably some</button>
+      <button class="opt-btn" data-val="5">No, we have controls</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Does your organisation have a policy governing AI tool usage?</div>
+    <div class="option-grid" data-key="d5q3" data-type="single">
+      <button class="opt-btn" data-val="1">No</button>
+      <button class="opt-btn" data-val="3">Informal guidelines</button>
+      <button class="opt-btn" data-val="5">Yes, formal policy</button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">What AI licensing does your organisation currently hold?</div>
+    <div class="option-grid" data-key="d5q4" data-type="single">
+      <button class="opt-btn" data-val="1">Free plans only</button>
+      <button class="opt-btn" data-val="3">Team / Business plan</button>
+      <button class="opt-btn" data-val="4">Enterprise plan</button>
+      <button class="opt-btn" data-val="2">Mixed / unsure</button>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goTo(4)">← Back</button>
+    <button class="btn-next btn-primary" onclick="showResults()">See my results →</button>
+  </div>
+</div>
+
+<!-- Screen 6: Results -->
+<div class="screen" id="s6">
+  <div class="step-label">Your AI Readiness Report</div>
+  <div class="overall-badge" id="overall-badge"></div>
+  <h2 id="res-headline"></h2>
+  <p class="screen-sub" id="res-sub"></p>
+
+  <div style="position: relative; width: 100%; height: 300px; margin: 1rem 0;">
+    <canvas id="radarChart"></canvas>
+  </div>
+
+  <div class="result-score-row" id="score-row"></div>
+
+  <div style="margin: 1.5rem 0 0.5rem;">
+    <p style="font-size: 13px; font-weight: 600; color: #888; margin-bottom: 0.75rem;">Key insights for your organisation</p>
+    <div id="insights"></div>
+  </div>
+
+  <p style="font-size: 13px; font-weight: 600; color: #888; margin: 1.5rem 0 0.75rem;">Recommended next steps</p>
+  <div class="cta-row">
+    <a class="cta-card cta-primary" href="https://calendly.com/YOUR-LINK" target="_blank">
+      <div class="c-title">Book a free discovery call →</div>
+      <div class="c-sub">30 min · We walk through your results together</div>
+    </a>
+    <a class="cta-card" href="mailto:nikostampfl@protonmail.com?subject=AI%20Readiness%20Report&body=Please%20send%20me%20my%20full%20report." target="_blank">
+      <div class="c-title">Request full report →</div>
+      <div class="c-sub">PDF with scores, insights, and module recommendations</div>
+    </a>
+  </div>
+
+  <p style="font-size: 11px; color: #bbb; text-align: center; margin-top: 2rem;">
+    Your results are confidential. Data is used solely to improve this assessment.
+  </p>
+</div>
+
+<script>
+const answers = {};
+let radarInstance = null;
+
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s' + n).classList.add('active');
+  document.getElementById('prog').style.width = Math.round((n / 6) * 100) + '%';
+  window.scrollTo(0, 0);
+}
+
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.opt-btn');
+  if (!btn) return;
+  const grid = btn.closest('[data-key]');
+  if (!grid) return;
+  const key = grid.dataset.key;
+  const type = grid.dataset.type;
+  const val = btn.dataset.val;
+  if (type === 'single') {
+    grid.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    answers[key] = val;
+  } else if (type === 'multi') {
+    btn.classList.toggle('selected-multi');
+    if (!answers[key]) answers[key] = [];
+    if (btn.classList.contains('selected-multi')) {
+      if (!answers[key].includes(val)) answers[key].push(val);
+    } else {
+      answers[key] = answers[key].filter(v => v !== val);
+    }
+  }
+});
+
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.scale-btn');
+  if (!btn) return;
+  const row = btn.closest('[data-key]');
+  if (!row) return;
+  row.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  answers[row.dataset.key] = parseInt(btn.dataset.val);
+});
+
+function dimScore(keys) {
+  let total = 0, count = 0;
+  keys.forEach(k => {
+    const v = answers[k];
+    if (v !== undefined && v !== null) {
+      const n = parseInt(v);
+      if (!isNaN(n)) { total += n; count++; }
+    }
+  });
+  if (count === 0) return 3;
+  return Math.min(5, Math.max(1, Math.round(total / count)));
+}
+
+function getInsight(dim, score) {
+  const map = {
+    'Tool usage': [
+      [1,2,'AI tools are largely absent or unused. A structured tool introduction and use-case analysis will have immediate, high impact.'],
+      [3,3,'Some AI adoption exists but usage is fragmented. Consolidating around approved tools with structured guidance will unlock more value.'],
+      [4,5,'Strong tool foundation in place. Focus shifts to depth — better prompting, custom projects, and automation.']
+    ],
+    'Competence': [
+      [1,2,'Skill gaps are significant. A structured enablement workshop (Module 01) is the essential first step before anything else.'],
+      [3,3,'Moderate competence but inconsistent across teams. A targeted workshop with role-specific exercises would level up everyone.'],
+      [4,5,'Good baseline. The team is ready to move directly into building custom Claude projects and workflow automation.']
+    ],
+    'Automation': [
+      [1,2,'Manual work is limited — automation potential is lower right now. Focus on tool adoption and prompting quality first.'],
+      [3,3,'Meaningful time is lost to repetitive tasks. Module 03 automations would deliver measurable ROI quickly.'],
+      [4,5,'High automation potential identified. Process modelling and tool integrations should be prioritised early.']
+    ],
+    'Leadership': [
+      [1,2,'Leadership alignment is low. Executive coaching (Module 04) is critical — AI adoption without top-down buy-in rarely sticks.'],
+      [3,3,'Leadership is aware but not yet actively driving change. A management workshop would accelerate team-wide adoption.'],
+      [4,5,'Leadership is engaged. The organisation is well-positioned for a fast, structured rollout across all modules.']
+    ],
+    'Compliance': [
+      [1,2,'Compliance posture is weak. A data protection and licensing review should happen before any broader AI rollout.'],
+      [3,3,'Some guardrails exist. An AVV review and team-plan licensing would close the remaining gaps efficiently.'],
+      [4,5,'Solid compliance foundation. Ready to deploy commercial AI tools at scale with confidence.']
+    ]
+  };
+  const entries = map[dim] || [];
+  for (const [lo, hi, text] of entries) {
+    if (score >= lo && score <= hi) return text;
+  }
+  return '';
+}
+
+function showResults() {
+  const d1 = dimScore(['d1q2', 'd1q3']);
+  const d2 = dimScore(['d2q1','d2q2','d2q3','d2q4']);
+  const d3 = dimScore(['d3q1','d3q2']);
+  const d4 = dimScore(['d4q1','d4q2']);
+  const d5 = dimScore(['d5q2','d5q3','d5q4']);
+  const scores = [d1, d2, d3, d4, d5];
+  const dims = ['Tool usage','Competence','Automation','Leadership','Compliance'];
+  const avg = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
+
+  const headlines = ['Early stage','Building foundations','Developing','Progressing well','AI-ready'];
+  const subs = [
+    'Your organisation is at the very beginning of its AI journey — which means the opportunity ahead is significant.',
+    'The foundations are being laid. Focused, structured support will accelerate your path to real AI impact.',
+    'Good progress across several dimensions. Targeted interventions will close the remaining gaps quickly.',
+    'Your organisation is on the right path. Deepening capabilities and automating key workflows is the logical next step.',
+    'Strong readiness across all dimensions. The focus now is on scaling and optimising what\'s already working.'
+  ];
+
+  document.getElementById('overall-badge').textContent = 'Overall score: ' + avg + ' / 5';
+  document.getElementById('res-headline').textContent = headlines[avg - 1];
+  document.getElementById('res-sub').textContent = subs[avg - 1];
+
+  const row = document.getElementById('score-row');
+  row.innerHTML = dims.map((d,i) => `<div class="score-card"><div class="s-label">${d}</div><div class="s-val">${scores[i]}/5</div></div>`).join('');
+
+  const ins = document.getElementById('insights');
+  ins.innerHTML = dims.map((d,i) => `<div class="insight-block"><div class="i-dim">${d} · ${scores[i]}/5</div><div class="i-text">${getInsight(d, scores[i])}</div></div>`).join('');
+
+  goTo(6);
+
+  setTimeout(() => {
+    if (radarInstance) { radarInstance.destroy(); radarInstance = null; }
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    radarInstance = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: dims,
+        datasets: [{
+          label: 'Your score',
+          data: scores,
+          backgroundColor: 'rgba(83,74,183,0.12)',
+          borderColor: '#534AB7',
+          borderWidth: 2,
+          pointBackgroundColor: '#534AB7',
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0, max: 5,
+            ticks: { stepSize: 1, display: false },
+            grid: { color: 'rgba(0,0,0,0.08)' },
+            angleLines: { color: 'rgba(0,0,0,0.08)' },
+            pointLabels: { font: { size: 12, family: '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif' }, color: '#666' }
+          }
+        }
+      }
+    });
+  }, 150);
+}
+</script>
+</body>
+</html>
